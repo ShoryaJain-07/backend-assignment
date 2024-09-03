@@ -3,6 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import {Transaction} from "../models/transaction.model.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 import {ApiError} from "../utils/apiError.js"
+import { Coin } from "../models/coin.model.js";
 
 const fetchTransactions = asyncHandler(async (req, res) => {
   try{
@@ -54,4 +55,26 @@ const fetchTransactions = asyncHandler(async (req, res) => {
   }
 });
 
-export { fetchTransactions };
+const getExpenses = asyncHandler(async (req, res) => {
+    try {
+        const { address } = req.query
+        const transactions = await Transaction.find({address})
+        let amount = 0;
+        transactions.map((transaction) => {
+            amount += ( transaction.gasUsed * transaction.gasPrice ) / 1000000000000000000;
+        })
+        const coin = await Coin.findOne({ name: "ethereum" })
+        const price = coin.price
+
+        const response = {
+            expenses: amount,
+            ethPrice: price
+        }
+
+        return res.json(new ApiResponse(200, response, "Fetched successfully"));
+    } catch (error) {
+      throw new ApiError(500, error);
+    }
+})
+
+export { fetchTransactions, getExpenses };
